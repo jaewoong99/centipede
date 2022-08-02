@@ -11,9 +11,10 @@ class Bar(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
         self.v = 0
-        
+        self.dir = 0
     def move(self, Fdir):
-        self.v += Fdir * 4
+        self.dir = Fdir
+        self.v += self.dir * 4
         self.rect.y += self.v
         if self.rect.y <= 102:
             self.rect.y = 102
@@ -35,7 +36,8 @@ class Ball(pygame.sprite.Sprite):
         self.vx = vx
         self.vy = vy
         self.stuck = False
-        
+        self.right_miss = 0
+        self.left_miss = 0
     def move(self):
         self.rect.x += self.vx
         self.rect.y += self.vy
@@ -46,11 +48,15 @@ class Ball(pygame.sprite.Sprite):
             self.rect.top = 100
             self.vy *= -1
         elif self.rect.left < 0:
-            self.rect.left = 0
-            self.vx *= -1
-        elif self.rect.left > 1000:
+            self.left_miss += 1
             self.rect.x = 495
-            self.rect.y = 225
+            self.rect.y = 500
+            self.vx = -10
+            self.vy = -10
+        elif self.rect.left > 1000:
+            self.right_miss += 1
+            self.rect.x = 495
+            self.rect.y = 190
             self.vx = 10
             self.vy = 10
     
@@ -82,8 +88,9 @@ def main():
     clock= pygame.time.Clock()
     all_sprites_list = pygame.sprite.Group()
     right_bar = Bar(BLUE, 950, 275)
+    left_bar = Bar(RED, 35, 275)
     all_sprites_list.add(right_bar)
-    right_Fdir = 0
+    all_sprites_list.add(left_bar)
     ball_v = random.choice([(10,10), (10,-10)])
     ball = Ball(WHITE, 495, 245, ball_v[0], ball_v[1])
     all_sprites_list.add(ball)
@@ -91,23 +98,37 @@ def main():
     while not gameover:
         clock.tick(30)
         screen.fill(BLACK)
+        score_left = large_font.render("miss:{}".format(ball.right_miss),True, GREEN)
+        score_right = large_font.render("miss:{}".format(ball.left_miss),True, GREEN)
+        screen.blit(score_left, (100,30))
+        screen.blit(score_right, (700,30))
         pygame.draw.line(screen, YELLOW, (0,95), (1000,95), 10)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 gameover = True
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
-                    right_Fdir = -1
+                    right_bar.dir = -1
                 elif event.key == pygame.K_DOWN:
-                    right_Fdir = 1
+                    right_bar.dir = 1
+                elif event.key == pygame.K_w:
+                    left_bar.dir = -1
+                elif event.key == pygame.K_s:
+                    left_bar.dir = 1
             elif event.type == pygame.KEYUP:
                 if event.key in [pygame.K_UP, pygame.K_DOWN]:
-                    right_Fdir = 0
-        right_bar.move(right_Fdir)
+                    right_bar.dir = 0
+                elif event.key in [pygame.K_w, pygame.K_s]:
+                    left_bar.dir = 0
+        right_bar.move(right_bar.dir)
+        left_bar.move(left_bar.dir)
         ball.move()
         ball.collide(right_bar)
+        ball.collide(left_bar)
         all_sprites_list.draw(screen)
         pygame.display.update()
+        if ball.right_miss == 3 or ball.left_miss == 3:
+            gameover = True
     pygame.quit()
     
 if __name__ == "__main__":
