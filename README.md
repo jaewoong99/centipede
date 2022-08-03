@@ -1,1 +1,2 @@
 # centipede
+Imitating Atari Games
